@@ -1,0 +1,1535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MailBlast — Bulk Email Sender</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --surface3: #272729;
+    --border: #2e2e32;
+    --border2: #3e3e44;
+    --text: #f0f0f2;
+    --text2: #9090a0;
+    --text3: #606070;
+    --accent: #7c6af7;
+    --accent-dim: #2a2545;
+    --accent-hover: #8f7fff;
+    --green: #3ecf8e;
+    --green-dim: #0e2a1e;
+    --red: #f87171;
+    --red-dim: #2a1010;
+    --amber: #fbbf24;
+    --amber-dim: #2a1e07;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 18px; font-weight: 600; letter-spacing: -0.3px;
+  }
+  .logo-icon {
+    width: 32px; height: 32px; background: var(--accent);
+    border-radius: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .logo-icon svg { width: 17px; height: 17px; fill: white; }
+  .header-meta { font-size: 13px; color: var(--text2); }
+
+  /* ── STEPS NAV ── */
+  .steps-nav {
+    display: flex; align-items: center;
+    padding: 0 32px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    gap: 0;
+  }
+  .step-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 14px 20px 14px 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    color: var(--text3);
+    font-size: 13px;
+    font-weight: 500;
+    user-select: none;
+  }
+  .step-item + .step-item::before {
+    content: '';
+    display: block;
+    width: 24px; height: 1px;
+    background: var(--border2);
+    margin-right: 20px;
+  }
+  .step-item.active { color: var(--text); border-bottom-color: var(--accent); }
+  .step-item.done { color: var(--green); }
+  .step-num {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface3); color: var(--text3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .step-item.active .step-num { background: var(--accent); color: white; }
+  .step-item.done .step-num { background: var(--green-dim); color: var(--green); }
+
+  /* ── LAYOUT ── */
+  .app {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 0;
+    min-height: calc(100vh - 113px);
+  }
+  .main-panel { padding: 28px 32px; border-right: 1px solid var(--border); overflow-y: auto; }
+  .side-panel { padding: 24px; overflow-y: auto; }
+
+  /* ── PANELS ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── SECTION HEADING ── */
+  .section-head { margin-bottom: 20px; }
+  .section-head h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.2px; margin-bottom: 4px; }
+  .section-head p { font-size: 13px; color: var(--text2); }
+
+  /* ── FORM ELEMENTS ── */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--text2); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  input[type=text], input[type=email], input[type=number], textarea, select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+  }
+  input[type=text]:focus, input[type=email]:focus,
+  input[type=number]:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+  input::placeholder, textarea::placeholder { color: var(--text3); }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.65; font-size: 14px; }
+  select { cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23606070' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 32px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text);
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--surface3); border-color: var(--border2); }
+  .btn:active { transform: scale(0.98); }
+  .btn svg { width: 15px; height: 15px; }
+
+  .btn-primary {
+    background: var(--accent); border-color: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+  .btn-success {
+    background: var(--green-dim); border-color: var(--green);
+    color: var(--green);
+  }
+  .btn-danger {
+    background: var(--red-dim); border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+  /* ── RECIPIENT INPUT BOX ── */
+  .recipient-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); min-height: 80px;
+    padding: 8px; display: flex; flex-wrap: wrap; gap: 6px; cursor: text;
+    transition: border-color 0.15s;
+  }
+  .recipient-box:focus-within { border-color: var(--accent); }
+  .recipient-box input {
+    border: none; background: transparent; min-width: 200px;
+    flex: 1; padding: 4px 6px; font-size: 13px;
+    outline: none; color: var(--text);
+  }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 8px 3px 10px;
+    background: var(--accent-dim); border: 1px solid var(--accent);
+    border-radius: 99px; font-size: 12px; color: var(--text);
+    font-family: 'DM Mono', monospace;
+  }
+  .tag.invalid { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+  .tag button {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); padding: 0; line-height: 1;
+    font-size: 15px; display: flex; align-items: center;
+  }
+  .tag button:hover { color: var(--red); }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 14px;
+  }
+  .card-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+  .stat {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px;
+  }
+  .stat-val { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .stat-label { font-size: 11px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* ── TEMPLATE VAR CHIPS ── */
+  .var-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .var-chip {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    padding: 3px 9px; background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 6px; color: var(--amber); cursor: pointer;
+    transition: all 0.12s;
+  }
+  .var-chip:hover { background: var(--amber-dim); border-color: var(--amber); }
+
+  /* ── PREVIEW BOX ── */
+  .preview-box {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    line-height: 1.75; color: var(--text2); white-space: pre-wrap;
+    max-height: 260px; overflow-y: auto;
+  }
+  .preview-field { color: var(--text3); font-size: 11px; margin-bottom: 8px; }
+  .preview-field span { color: var(--text); }
+
+  /* ── PROGRESS ── */
+  .progress-track {
+    height: 6px; background: var(--surface3); border-radius: 99px;
+    overflow: hidden; margin: 10px 0 6px;
+  }
+  .progress-fill {
+    height: 100%; background: var(--accent); border-radius: 99px;
+    transition: width 0.4s ease;
+  }
+
+  /* ── LOG ── */
+  .log {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 12px;
+    font-family: 'DM Mono', monospace; font-size: 12px;
+    max-height: 200px; overflow-y: auto; line-height: 1.9;
+  }
+  .log-line { display: flex; gap: 8px; align-items: baseline; }
+  .log-line .ts { color: var(--text3); flex-shrink: 0; font-size: 11px; }
+  .log-ok .dot { color: var(--green); }
+  .log-err .dot { color: var(--red); }
+  .log-info .dot { color: var(--text3); }
+  .log-warn .dot { color: var(--amber); }
+
+  /* ── IMPORT AREA ── */
+  .drop-zone {
+    border: 2px dashed var(--border2); border-radius: var(--radius);
+    padding: 28px 20px; text-align: center; cursor: pointer;
+    transition: all 0.2s; color: var(--text2);
+  }
+  .drop-zone:hover, .drop-zone.over { border-color: var(--accent); color: var(--text); background: var(--accent-dim); }
+  .drop-zone.loaded { border-color: var(--green); border-style: solid; background: var(--green-dim); }
+  .drop-zone svg { width: 28px; height: 28px; margin: 0 auto 8px; display: block; stroke: currentColor; fill: none; stroke-width: 1.5; }
+  .drop-zone input { display: none; }
+
+  /* ── FILE DETECT RESULT ── */
+  .file-detect {
+    margin-top: 14px; border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  .file-detect-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .file-detect-header .fmt-icon {
+    width: 32px; height: 32px; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; font-family: 'DM Mono', monospace;
+    flex-shrink: 0;
+  }
+  .fmt-csv { background: #0e2a1e; color: var(--green); border: 1px solid var(--green); }
+  .fmt-txt { background: #2a2545; color: #a89fff; border: 1px solid var(--accent); }
+  .fmt-tsv { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+  .fmt-unknown { background: var(--surface3); color: var(--text3); border: 1px solid var(--border2); }
+  .file-detect-info { flex: 1; }
+  .file-detect-info .fname { font-size: 13px; font-weight: 500; }
+  .file-detect-info .fmeta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  .col-map { padding: 10px 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .col-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px; border-radius: 99px; font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+  .col-mapped { background: var(--green-dim); border: 1px solid var(--green); color: var(--green); }
+  .col-extra { background: var(--surface3); border: 1px solid var(--border2); color: var(--text3); }
+  .col-missing { background: var(--red-dim); border: 1px solid var(--red); color: var(--red); }
+  .col-pill .col-role { font-size: 10px; opacity: 0.7; }
+  .detect-warning {
+    margin: 0 14px 10px; padding: 8px 12px;
+    background: var(--amber-dim); border: 1px solid var(--amber);
+    border-radius: 7px; font-size: 12px; color: var(--amber);
+  }
+
+  /* ── METHOD CARDS — upgraded ── */
+  .method-card .m-format-tag {
+    display: inline-block; margin-top: 6px;
+    padding: 2px 7px; border-radius: 5px; font-size: 10px;
+    font-family: 'DM Mono', monospace; font-weight: 600;
+    background: var(--surface3); border: 1px solid var(--border2);
+    color: var(--text3);
+  }
+  .method-card.selected .m-format-tag { background: var(--accent-dim); border-color: var(--accent); color: #a89fff; }
+  .method-card .m-use-when {
+    margin-top: 8px; padding-top: 8px;
+    border-top: 1px solid var(--border);
+    font-size: 10px; color: var(--text3); line-height: 1.5;
+  }
+  .method-card.selected .m-use-when { border-top-color: var(--border2); }
+
+  /* ── HELPER TEXT ── */
+  .hint { font-size: 12px; color: var(--text3); margin-top: 5px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 500;
+  }
+  .badge-green { background: var(--green-dim); color: var(--green); border: 1px solid var(--green); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+  .badge-red { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .badge-accent { background: var(--accent-dim); color: #a89fff; border: 1px solid var(--accent); }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 12px 18px;
+    font-size: 13px; color: var(--text);
+    transform: translateY(80px); opacity: 0;
+    transition: all 0.25s; z-index: 999;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── SEND METHOD CARDS ── */
+  .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .method-card {
+    padding: 14px; border-radius: var(--radius); cursor: pointer;
+    border: 1px solid var(--border); background: var(--surface2);
+    transition: all 0.15s; user-select: none;
+  }
+  .method-card:hover { border-color: var(--border2); }
+  .method-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+  .method-card svg { width: 20px; height: 20px; stroke: var(--text2); fill: none; stroke-width: 1.5; margin-bottom: 8px; }
+  .method-card.selected svg { stroke: var(--accent); }
+  .method-card .m-title { font-size: 13px; font-weight: 500; }
+  .method-card .m-desc { font-size: 11px; color: var(--text3); margin-top: 3px; line-height: 1.5; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-bar {
+    padding: 16px 32px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .bottom-bar .left { display: flex; gap: 8px; align-items: center; }
+  .bottom-bar .right { display: flex; gap: 8px; align-items: center; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── SIDE PANEL ── */
+  .side-heading { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+  .tip-item { display: flex; gap: 10px; margin-bottom: 12px; font-size: 13px; color: var(--text2); line-height: 1.55; }
+  .tip-icon { flex-shrink: 0; width: 18px; height: 18px; margin-top: 1px; stroke: var(--text3); fill: none; stroke-width: 1.5; }
+
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .side-panel { border-top: 1px solid var(--border); }
+    .method-grid { grid-template-columns: 1fr 1fr; }
+  }
+  /* ── ROTATION MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 32px 28px; width: 420px; max-width: 90vw;
+    text-align: center; position: relative;
+  }
+  .ring-wrap { position: relative; width: 96px; height: 96px; margin: 0 auto 20px; }
+  .ring-wrap svg { width: 96px; height: 96px; transform: rotate(-90deg); }
+  .ring-track { fill: none; stroke: var(--surface3); stroke-width: 6; }
+  .ring-fill { fill: none; stroke: var(--amber); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 276; transition: stroke-dashoffset 0.4s ease; }
+  .ring-label {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: var(--text);
+    line-height: 1.1;
+  }
+  .ring-sub { font-size: 10px; color: var(--text3); font-weight: 400; }
+  .modal h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--text2); line-height: 1.65; margin-bottom: 20px; }
+  .modal-steps { text-align: left; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 20px; }
+  .modal-step { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text2); margin-bottom: 10px; line-height: 1.5; }
+  .modal-step:last-child { margin-bottom: 0; }
+  .modal-step-num { width: 20px; height: 20px; border-radius: 50%; background: var(--accent-dim); border: 1px solid var(--accent); color: #a89fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .modal-field { margin-bottom: 16px; text-align: left; }
+  .modal-field label { display: block; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6" stroke="white" stroke-width="2" fill="none"/></svg>
+    </div>
+    MailBlast
+  </div>
+  <div class="header-meta" id="headerMeta">0 recipients · No message</div>
+</header>
+
+<!-- STEP NAV -->
+<div class="steps-nav">
+  <div class="step-item active" id="nav-1" onclick="goToStep(1)">
+    <div class="step-num" id="snum-1">1</div> Recipients
+  </div>
+  <div class="step-item" id="nav-2" onclick="goToStep(2)">
+    <div class="step-num" id="snum-2">2</div> Compose
+  </div>
+  <div class="step-item" id="nav-3" onclick="goToStep(3)">
+    <div class="step-num" id="snum-3">3</div> Settings
+  </div>
+  <div class="step-item" id="nav-4" onclick="goToStep(4)">
+    <div class="step-num" id="snum-4">4</div> Send
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app">
+  <div class="main-panel">
+
+    <!-- ══ STEP 1: RECIPIENTS ══ -->
+    <div class="panel active" id="step-1">
+      <div class="section-head">
+        <h2>Add recipients</h2>
+        <p>Type email addresses one by one, paste a list, or import a CSV file.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">Type or paste emails</span></div>
+        <div class="field">
+          <label>Email addresses — press Enter or comma to add each one</label>
+          <div class="recipient-box" id="recipientBox" onclick="focusEmailInput()">
+            <input type="text" id="emailInput" placeholder="name@example.com" autocomplete="off" />
+          </div>
+          <div class="hint">You can also paste a comma-separated or line-by-line list directly into the box above.</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-sm" onclick="clearAll()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+            Clear all
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <span class="card-title">Import from file</span>
+          <span style="font-size:11px;color:var(--text3)">CSV · TXT · TSV supported</span>
+        </div>
+        <div class="drop-zone" id="dropZone" onclick="document.getElementById('csvInput').click()"
+          ondragover="event.preventDefault();this.classList.add('over')"
+          ondragleave="this.classList.remove('over')"
+          ondrop="handleDrop(event)">
+          <input type="file" id="csvInput" accept=".csv,.txt,.tsv" onchange="handleCSVFile(this)" />
+          <svg id="dropIcon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <div id="dropLabel" style="font-weight:500;font-size:14px">Click to upload or drag &amp; drop</div>
+          <div id="dropSub" style="font-size:12px;color:var(--text3);margin-top:4px">
+            Accepts <code style="color:var(--amber)">.csv</code>, <code style="color:var(--amber)">.txt</code>, or <code style="color:var(--amber)">.tsv</code> — any file with email addresses
+          </div>
+        </div>
+        <div id="fileDetectResult" style="display:none"></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text3)">
+          <strong style="color:var(--text2)">Supported formats:</strong>
+          &nbsp;Comma-separated &nbsp;·&nbsp; Tab-separated &nbsp;·&nbsp; One email per line &nbsp;·&nbsp; With or without headers
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-val" id="statTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" style="color:var(--green)" id="statValid">0</div>
+          <div class="stat-label">Valid</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" style="color:var(--red)" id="statInvalid">0</div>
+          <div class="stat-label">Invalid</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 2: COMPOSE ══ -->
+    <div class="panel" id="step-2">
+      <div class="section-head">
+        <h2>Compose your message</h2>
+        <p>Write your subject and body. Use template variables to personalise each email.</p>
+      </div>
+
+      <div class="card">
+        <div class="field">
+          <label>Your name (From)</label>
+          <input type="text" id="fromName" placeholder="Aminu Bello" />
+        </div>
+        <div class="field">
+          <label>Subject line</label>
+          <input type="text" id="subject" placeholder="Important update for you" />
+        </div>
+        <div class="field">
+          <label>Message body</label>
+          <textarea id="body" placeholder="Hi {{name}},&#10;&#10;Write your message here...&#10;&#10;Best regards,&#10;{{fromName}}"></textarea>
+        </div>
+        <div>
+          <div class="hint" style="margin-bottom:6px">Click a variable to insert it at cursor position:</div>
+          <div class="var-chips">
+            <span class="var-chip" onclick="insertVar('{{name}}')">{{name}}</span>
+            <span class="var-chip" onclick="insertVar('{{email}}')">{{email}}</span>
+            <span class="var-chip" onclick="insertVar('{{company}}')">{{company}}</span>
+            <span class="var-chip" onclick="insertVar('{{fromName}}')">{{fromName}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="previewCard">
+        <div class="card-head">
+          <span class="card-title">Live preview</span>
+          <span class="badge badge-accent" id="previewRecipientBadge">Recipient 1</span>
+        </div>
+        <div class="preview-field">To: <span id="pvTo">—</span></div>
+        <div class="preview-field">Subject: <span id="pvSubject">—</span></div>
+        <div class="divider" style="margin:10px 0"></div>
+        <div class="preview-box" id="pvBody">Your message will appear here...</div>
+      </div>
+    </div>
+
+    <!-- ══ STEP 3: SETTINGS ══ -->
+    <div class="panel" id="step-3">
+      <div class="section-head">
+        <h2>Sending settings</h2>
+        <p>Choose how emails are sent and set pacing to avoid spam filters.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">Send method</span></div>
+        <div class="method-grid">
+          <div class="method-card selected" id="m-mailto" onclick="selectMethod('mailto')">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <div class="m-title">Open in mail app</div>
+            <div class="m-format-tag">mailto: link</div>
+            <div class="m-desc" style="margin-top:6px">Opens Outlook, Thunderbird, or Apple Mail pre-filled for each recipient.</div>
+            <div class="m-use-when">✓ Best when you have a desktop mail app set as default (not Gmail browser)</div>
+          </div>
+          <div class="method-card" id="m-eml" onclick="selectMethod('eml')">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <div class="m-title">Download .eml files</div>
+            <div class="m-format-tag">.eml per recipient</div>
+            <div class="m-desc" style="margin-top:6px">One ready-to-send email file per person. Drag into any mail app and send.</div>
+            <div class="m-use-when">✓ Best fix for Gmail blocking — open in Outlook/Thunderbird to send</div>
+          </div>
+          <div class="method-card" id="m-txt" onclick="selectMethod('txt')">
+            <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            <div class="m-title">Copy to clipboard</div>
+            <div class="m-format-tag">clipboard · one at a time</div>
+            <div class="m-desc" style="margin-top:6px">Copies each personalised message — paste directly into Gmail or any webmail.</div>
+            <div class="m-use-when">✓ Best for small lists where you want to send through Gmail manually</div>
+          </div>
+          <div class="method-card" id="m-html" onclick="selectMethod('html')">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <div class="m-title">Export all as .txt</div>
+            <div class="m-format-tag">.txt — all emails in one file</div>
+            <div class="m-desc" style="margin-top:6px">One document with every message written out — for review, VA handoff, or records.</div>
+            <div class="m-use-when">✓ Best for reviewing all emails before sending, or passing to someone else</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">Pacing &amp; speed</span></div>
+        <div class="field">
+          <label>Delay between emails (seconds)</label>
+          <input type="number" id="delay" value="3" min="0" max="120" step="1" />
+          <div class="hint">Recommended: 2–5 sec to avoid spam flags in Thunderbird.</div>
+        </div>
+      </div>
+
+      <div class="card" style="border-color: var(--accent);">
+        <div class="card-head">
+          <span class="card-title">Sender rotation</span>
+          <span class="badge badge-accent">Recommended for large lists</span>
+        </div>
+        <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+          When sending to large lists (5,000+), sending too many from one address risks it being flagged. Set a limit and the tool will <strong style="color:var(--text)">pause automatically</strong> and remind you to switch to your next sender account in Thunderbird before continuing.
+        </p>
+        <div class="row2">
+          <div class="field">
+            <label>Pause after how many emails?</label>
+            <input type="number" id="rotateLimit" value="100" min="10" max="5000" step="10" />
+            <div class="hint">e.g. 100 means pause every 100 sent.</div>
+          </div>
+          <div class="field">
+            <label>Sender rotation</label>
+            <select id="rotateEnabled">
+              <option value="on">Enabled — pause &amp; prompt me</option>
+              <option value="off">Disabled — send without pausing</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:0">
+          <label>Current sender name (shown in From field)</label>
+          <input type="text" id="fromName2" placeholder="Synced from Compose step" readonly
+            style="color:var(--text3);cursor:default" />
+          <div class="hint">Update your sender name on the Compose step. You'll be reminded to switch accounts in Thunderbird at each pause.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">Summary before sending</span></div>
+        <table style="width:100%;font-size:13px;border-collapse:collapse" id="summaryTable">
+          <tr><td style="color:var(--text3);padding:5px 0">Recipients</td><td style="text-align:right;font-weight:500" id="sumRecipients">—</td></tr>
+          <tr><td style="color:var(--text3);padding:5px 0">Subject</td><td style="text-align:right;font-weight:500;color:var(--text2)" id="sumSubject">—</td></tr>
+          <tr><td style="color:var(--text3);padding:5px 0">From name</td><td style="text-align:right;font-weight:500;color:var(--text2)" id="sumFrom">—</td></tr>
+          <tr><td style="color:var(--text3);padding:5px 0">Method</td><td style="text-align:right" id="sumMethod">—</td></tr>
+          <tr><td style="color:var(--text3);padding:5px 0">Delay</td><td style="text-align:right" id="sumDelay">—</td></tr>
+          <tr><td style="color:var(--text3);padding:5px 0">Sender rotation</td><td style="text-align:right" id="sumRotate">—</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══ STEP 4: SEND ══ -->
+    <div class="panel" id="step-4">
+      <div class="section-head">
+        <h2>Send emails</h2>
+        <p>Review the details below, then hit Send to begin.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-val" id="sendStatTotal">0</div>
+          <div class="stat-label">Total</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" style="color:var(--green)" id="sendStatDone">0</div>
+          <div class="stat-label">Sent</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val" style="color:var(--red)" id="sendStatFail">0</div>
+          <div class="stat-label">Failed</div>
+        </div>
+      </div>
+
+      <div class="card" id="sendControl">
+        <div class="card-head">
+          <span class="card-title" id="sendStatusLabel">Ready to send</span>
+          <span class="badge" id="sendBadge" style="display:none"></span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
+          <span style="font-size:12px;color:var(--text3)" id="progressText">0 / 0</span>
+          <span style="font-size:12px;color:var(--text3)" id="etaText"></span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnSend" onclick="startSend()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Start sending
+          </button>
+          <button class="btn btn-danger" id="btnStop" onclick="stopSend()" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/></svg>
+            Stop
+          </button>
+          <button class="btn" id="btnReset" onclick="resetSend()" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.5"/></svg>
+            Reset &amp; resend
+          </button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><span class="card-title">Activity log</span></div>
+        <div class="log" id="logBox"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-panel -->
+
+  <!-- SIDE PANEL -->
+  <div class="side-panel" id="sidePanelContent">
+    <!-- dynamically updated per step -->
+  </div>
+</div><!-- /app -->
+
+<!-- BOTTOM NAV BAR -->
+<div class="bottom-bar">
+  <div class="left">
+    <button class="btn" id="btnBack" onclick="prevStep()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="15 18 9 12 15 6"/></svg>
+      Back
+    </button>
+  </div>
+  <div class="right">
+    <span style="font-size:12px;color:var(--text3)" id="stepLabel">Step 1 of 4</span>
+    <button class="btn btn-primary" id="btnNext" onclick="nextStep()">
+      Continue
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- SENDER ROTATION MODAL -->
+<div class="modal-overlay" id="rotationModal">
+  <div class="modal">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 96 96">
+        <circle class="ring-track" cx="48" cy="48" r="44"/>
+        <circle class="ring-fill" id="ringFill" cx="48" cy="48" r="44" stroke-dashoffset="0"/>
+      </svg>
+      <div class="ring-label">
+        <span id="ringNumber">100</span>
+        <span class="ring-sub">sent</span>
+      </div>
+    </div>
+
+    <h3>Time to switch sender ✋</h3>
+    <p>You've sent <strong id="modalSentCount">100</strong> emails from your current account. Switch to your next sender in Thunderbird, then hit Continue below.</p>
+
+    <div class="modal-steps">
+      <div class="modal-step"><div class="modal-step-num">1</div><div>Open <strong style="color:var(--text)">Thunderbird</strong> and switch to your next sender account (File → Switch Profile, or select another account in the sidebar)</div></div>
+      <div class="modal-step"><div class="modal-step-num">2</div><div>Optionally update the sender name below if needed</div></div>
+      <div class="modal-step"><div class="modal-step-num">3</div><div>Press <strong style="color:var(--green)">Continue sending</strong> — it picks up exactly where it left off</div></div>
+    </div>
+
+    <div class="modal-field">
+      <label>Update sender name (optional)</label>
+      <input type="text" id="modalFromName" placeholder="New sender name..." />
+    </div>
+
+    <div style="font-size:12px;color:var(--text3);margin-bottom:18px" id="modalRemaining"></div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" onclick="abortFromModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><rect x="3" y="3" width="18" height="18"/></svg>
+        Stop sending
+      </button>
+      <button class="btn btn-success" onclick="continueFromModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Continue sending
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── STATE ──
+let recipients = [];
+let currentStep = 1;
+let sendMethod = 'mailto';
+let isSending = false;
+let stopFlag = false;
+let sentCount = 0;
+let failCount = 0;
+let rotationResolve = null; // resolves the pause promise when user continues
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// ── UTILITIES ──
+function $(id) { return document.getElementById(id); }
+
+function toast(msg, type = 'info') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.style.borderColor = type === 'ok' ? 'var(--green)' : type === 'err' ? 'var(--red)' : 'var(--border2)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+function ts() {
+  const d = new Date();
+  return d.toTimeString().slice(0,8);
+}
+
+function log(msg, type = 'info') {
+  const box = $('logBox');
+  const line = document.createElement('div');
+  line.className = `log-line log-${type}`;
+  line.innerHTML = `<span class="ts">${ts()}</span><span class="dot">${type==='ok'?'✓':type==='err'?'✗':type==='warn'?'⚠':'·'}</span><span>${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ── RECIPIENTS ──
+function focusEmailInput() { $('emailInput').focus(); }
+
+$('emailInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = $('emailInput').value.replace(/,/g,'').trim();
+    if (val) { addEmailTag(val); $('emailInput').value = ''; }
+  }
+  if (e.key === 'Backspace' && $('emailInput').value === '' && recipients.length) {
+    recipients.pop();
+    renderTags();
+  }
+});
+
+$('emailInput').addEventListener('paste', e => {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text');
+  const emails = text.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean);
+  emails.forEach(em => addEmailTag(em));
+});
+
+$('emailInput').addEventListener('blur', () => {
+  const val = $('emailInput').value.trim();
+  if (val) { addEmailTag(val); $('emailInput').value = ''; }
+});
+
+function addEmailTag(email) {
+  email = email.toLowerCase().trim();
+  if (!email) return;
+  if (recipients.find(r => r.email === email)) { toast('Already added: ' + email); return; }
+  const valid = EMAIL_RE.test(email);
+  recipients.push({ email, name: email.split('@')[0], company: '', valid });
+  renderTags();
+}
+
+function renderTags() {
+  const box = $('recipientBox');
+  box.querySelectorAll('.tag').forEach(t => t.remove());
+  const input = $('emailInput');
+  recipients.forEach((r, i) => {
+    const tag = document.createElement('span');
+    tag.className = 'tag' + (r.valid ? '' : ' invalid');
+    tag.innerHTML = `${r.email} <button title="Remove" onclick="removeRecipient(${i})">×</button>`;
+    box.insertBefore(tag, input);
+  });
+  updateStats();
+  updateHeader();
+}
+
+function removeRecipient(i) {
+  recipients.splice(i, 1);
+  renderTags();
+}
+
+function clearAll() {
+  recipients = [];
+  renderTags();
+}
+
+function updateStats() {
+  const valid = recipients.filter(r => r.valid).length;
+  const invalid = recipients.length - valid;
+  $('statTotal').textContent = recipients.length;
+  $('statValid').textContent = valid;
+  $('statInvalid').textContent = invalid;
+}
+
+// ── SMART FILE IMPORT ──
+function handleDrop(e) {
+  e.preventDefault();
+  $('dropZone').classList.remove('over');
+  const file = e.dataTransfer.files[0];
+  if (file) parseAnyFile(file);
+}
+function handleCSVFile(input) {
+  if (input.files[0]) parseAnyFile(input.files[0]);
+}
+
+function detectFormat(filename, content) {
+  const ext = filename.split('.').pop().toLowerCase();
+  const firstLine = content.split(/\r?\n/)[0] || '';
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  if (ext === 'tsv' || tabCount > commaCount) return 'tsv';
+  if (ext === 'csv' || commaCount > 0) return 'csv';
+  if (EMAIL_RE.test(firstLine.trim())) return 'plain';
+  return commaCount > 0 ? 'csv' : 'plain';
+}
+
+function splitLine(line, fmt) {
+  if (fmt === 'tsv') return line.split('\t').map(c => c.trim().replace(/^"|"$/g,''));
+  return line.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+}
+
+function parseAnyFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const raw = e.target.result.trim();
+    const lines = raw.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (!lines.length) { toast('File is empty', 'err'); return; }
+
+    const fmt = detectFormat(file.name, raw);
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fmtLabel = fmt === 'tsv' ? 'TSV' : fmt === 'plain' ? 'TXT' : 'CSV';
+
+    let headers = [];
+    let dataLines = lines;
+    let eIdx = -1, nIdx = -1, cIdx = -1;
+    let isHeaderless = false;
+
+    if (fmt === 'plain') {
+      isHeaderless = true;
+      eIdx = 0;
+    } else {
+      const firstCols = splitLine(lines[0], fmt).map(h => h.toLowerCase());
+      eIdx = firstCols.findIndex(h => h.includes('email') || h.includes('e-mail') || h === 'mail');
+      nIdx = firstCols.findIndex(h => h.includes('name') && !h.includes('company') && !h.includes('last') && !h.includes('first'));
+      const fnIdx = firstCols.findIndex(h => h.includes('first') && h.includes('name') || h === 'firstname' || h === 'first');
+      const lnIdx = firstCols.findIndex(h => h.includes('last') && h.includes('name') || h === 'lastname' || h === 'last');
+      cIdx = firstCols.findIndex(h => h.includes('company') || h.includes('org') || h.includes('business'));
+
+      if (eIdx >= 0) {
+        headers = firstCols;
+        dataLines = lines.slice(1);
+        if (nIdx < 0 && fnIdx >= 0) nIdx = fnIdx;
+      } else {
+        const firstRowIsEmail = EMAIL_RE.test((splitLine(lines[0], fmt)[0] || '').trim());
+        if (firstRowIsEmail) {
+          isHeaderless = true; eIdx = 0; dataLines = lines;
+        } else {
+          showFileDetect(file.name, fmtLabel, [], [], 0, 'No email column found — make sure one column is labelled "email"');
+          return;
+        }
+      }
+    }
+
+    let added = 0;
+    const parsed = [];
+    for (const line of dataLines) {
+      const cols = fmt === 'plain' ? [line.trim()] : splitLine(line, fmt);
+      const emails = (cols[eIdx] || '').toLowerCase().split(/[;\s]+/).map(s => s.trim()).filter(s => EMAIL_RE.test(s));
+      emails.forEach(email => {
+        if (!recipients.find(r => r.email === email)) {
+          const name = nIdx >= 0 && cols[nIdx] ? cols[nIdx] : email.split('@')[0];
+          const company = cIdx >= 0 && cols[cIdx] ? cols[cIdx] : '';
+          recipients.push({ email, valid: true, name, company });
+          added++;
+        }
+      });
+    }
+
+    renderTags();
+
+    const mappedCols = [];
+    if (eIdx >= 0) mappedCols.push({ label: isHeaderless ? 'email' : headers[eIdx], role: 'email', status: 'mapped' });
+    if (nIdx >= 0) mappedCols.push({ label: headers[nIdx], role: 'name', status: 'mapped' });
+    if (cIdx >= 0) mappedCols.push({ label: headers[cIdx], role: 'company', status: 'mapped' });
+    const unmapped = headers.filter((_, i) => i !== eIdx && i !== nIdx && i !== cIdx);
+    unmapped.forEach(h => mappedCols.push({ label: h, role: null, status: 'extra' }));
+
+    if (!headers.includes('email') && nIdx < 0) {
+      mappedCols.push({ label: 'name', role: 'name (auto from email)', status: 'extra' });
+    }
+
+    showFileDetect(file.name, fmtLabel, mappedCols, [], added, null);
+    toast(`Imported ${added} contact${added !== 1 ? 's' : ''} from ${file.name}`, 'ok');
+  };
+  reader.onerror = () => toast('Could not read file', 'err');
+  reader.readAsText(file);
+}
+
+function showFileDetect(fname, fmtLabel, cols, warnings, added, errorMsg) {
+  const zone = $('dropZone');
+  const result = $('fileDetectResult');
+
+  if (errorMsg) {
+    zone.classList.remove('loaded');
+    result.style.display = '';
+    result.innerHTML = `<div class="file-detect"><div class="file-detect-header"><div class="fmt-icon fmt-unknown">${fmtLabel}</div><div class="file-detect-info"><div class="fname">${fname}</div><div class="fmeta" style="color:var(--red)">Could not import</div></div></div><div class="detect-warning" style="margin:10px 14px;">${errorMsg}</div></div>`;
+    return;
+  }
+
+  zone.classList.add('loaded');
+  $('dropIcon').innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+  $('dropLabel').textContent = `${fname} loaded`;
+  $('dropSub').textContent = `${added} contact${added !== 1 ? 's' : ''} imported — click to replace with a different file`;
+
+  const fmtClass = fmtLabel === 'CSV' ? 'fmt-csv' : fmtLabel === 'TSV' ? 'fmt-tsv' : 'fmt-txt';
+  const colHTML = cols.map(c => {
+    const cls = c.status === 'mapped' ? 'col-mapped' : 'col-extra';
+    const roleText = c.role ? `<span class="col-role"> → ${c.role}</span>` : '';
+    return `<span class="col-pill ${cls}">${c.label}${roleText}</span>`;
+  }).join('');
+
+  result.style.display = '';
+  result.innerHTML = `
+    <div class="file-detect">
+      <div class="file-detect-header">
+        <div class="fmt-icon ${fmtClass}">${fmtLabel}</div>
+        <div class="file-detect-info">
+          <div class="fname">${fname}</div>
+          <div class="fmeta">${added} contact${added !== 1 ? 's' : ''} imported · columns detected below</div>
+        </div>
+        <span class="badge badge-green">✓ Ready</span>
+      </div>
+      ${cols.length ? `<div class="col-map">${colHTML}</div>` : ''}
+    </div>`;
+}
+
+// ── TEMPLATE RENDERING ──
+function render(template, r) {
+  const fn = $('fromName').value || '';
+  return (template || '')
+    .replace(/{{name}}/g, r.name || r.email.split('@')[0])
+    .replace(/{{email}}/g, r.email)
+    .replace(/{{company}}/g, r.company || '')
+    .replace(/{{fromName}}/g, fn);
+}
+
+function insertVar(v) {
+  const ta = $('body');
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  ta.value = ta.value.slice(0, s) + v + ta.value.slice(e);
+  ta.focus();
+  ta.setSelectionRange(s + v.length, s + v.length);
+  updatePreview();
+}
+
+// ── LIVE PREVIEW ──
+function updatePreview() {
+  const valid = recipients.filter(r => r.valid);
+  const r = valid[0] || { email: 'client@example.com', name: 'Client', company: 'Acme Ltd', valid: true };
+  $('pvTo').textContent = r.email;
+  $('pvSubject').textContent = render($('subject').value, r) || '—';
+  $('pvBody').textContent = render($('body').value, r) || 'Your message will appear here...';
+  $('previewRecipientBadge').textContent = valid.length ? 'Preview: ' + r.email : 'No valid recipients yet';
+}
+
+$('subject').addEventListener('input', updatePreview);
+$('body').addEventListener('input', updatePreview);
+$('fromName').addEventListener('input', updatePreview);
+
+// ── SEND METHODS ──
+function selectMethod(m) {
+  sendMethod = m;
+  ['mailto','eml','txt','html'].forEach(id => {
+    $('m-'+id).classList.toggle('selected', id === m);
+  });
+}
+
+// ── STEP NAVIGATION ──
+function goToStep(n) {
+  if (n === currentStep) return;
+  if (n > currentStep) {
+    for (let s = currentStep; s < n; s++) {
+      if (!validateStep(s)) return;
+    }
+  }
+  setStep(n);
+}
+
+function validateStep(s) {
+  if (s === 1) {
+    const valid = recipients.filter(r => r.valid);
+    if (!valid.length) { toast('Add at least one valid email address.', 'err'); return false; }
+    return true;
+  }
+  if (s === 2) {
+    if (!$('subject').value.trim()) { toast('Enter a subject line.', 'err'); return false; }
+    if (!$('body').value.trim()) { toast('Enter a message body.', 'err'); return false; }
+    return true;
+  }
+  return true;
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    $('step-'+i).classList.toggle('active', i === n);
+    $('nav-'+i).classList.toggle('active', i === n);
+    $('nav-'+i).classList.toggle('done', i < n);
+    $('snum-'+i).textContent = i < n ? '✓' : i;
+  }
+  currentStep = n;
+  $('stepLabel').textContent = `Step ${n} of 4`;
+  $('btnBack').style.display = n > 1 ? '' : 'none';
+  $('btnNext').style.display = n < 4 ? '' : 'none';
+
+  if (n === 2) updatePreview();
+  if (n === 3) updateSummary();
+  if (n === 4) initSendPanel();
+  updateSidePanel();
+}
+
+function nextStep() {
+  if (validateStep(currentStep)) setStep(currentStep + 1);
+}
+function prevStep() { setStep(currentStep - 1); }
+
+// ── SUMMARY ──
+function updateSummary() {
+  const valid = recipients.filter(r => r.valid);
+  $('sumRecipients').textContent = valid.length + ' valid recipients';
+  $('sumSubject').textContent = $('subject').value || '—';
+  $('sumFrom').textContent = $('fromName').value || '—';
+  const labels = { mailto:'Open in mail app', eml:'Download .eml files', txt:'Copy to clipboard', html:'Export .txt file' };
+  $('sumMethod').innerHTML = `<span class="badge badge-accent">${labels[sendMethod]}</span>`;
+  $('sumDelay').textContent = $('delay').value + 's between each';
+  const rotateOn = $('rotateEnabled').value === 'on';
+  const rotateLimit = $('rotateLimit').value;
+  $('sumRotate').innerHTML = rotateOn
+    ? `<span class="badge badge-amber">Pause every ${rotateLimit} emails</span>`
+    : `<span style="color:var(--text3)">Disabled</span>`;
+  // sync read-only display field
+  $('fromName2').value = $('fromName').value || '(not set)';
+}
+
+// ── SEND PANEL ──
+function initSendPanel() {
+  const valid = recipients.filter(r => r.valid);
+  $('sendStatTotal').textContent = valid.length;
+  $('sendStatDone').textContent = 0;
+  $('sendStatFail').textContent = 0;
+  $('progressFill').style.width = '0%';
+  $('progressText').textContent = `0 / ${valid.length}`;
+  $('logBox').innerHTML = '';
+  $('btnSend').style.display = '';
+  $('btnStop').style.display = 'none';
+  $('btnReset').style.display = 'none';
+  $('sendBadge').style.display = 'none';
+  $('sendStatusLabel').textContent = 'Ready to send';
+  $('etaText').textContent = '';
+  sentCount = 0; failCount = 0;
+  const rotateOn = $('rotateEnabled').value === 'on';
+  const rotateLimit = $('rotateLimit').value;
+  log(`Ready — ${valid.length} recipient(s) · method: ${sendMethod}`, 'info');
+  if (rotateOn) log(`Sender rotation ON — will pause every ${rotateLimit} emails`, 'info');
+}
+
+function updateHeader() {
+  const valid = recipients.filter(r => r.valid).length;
+  const subj = $('subject') ? $('subject').value : '';
+  $('headerMeta').textContent = `${valid} recipient${valid !== 1 ? 's' : ''} · ${subj ? '"' + subj.slice(0,40) + (subj.length > 40 ? '…' : '') + '"' : 'No message'}`;
+}
+
+// ── ACTUAL SEND ──
+async function startSend() {
+  const valid = recipients.filter(r => r.valid);
+  if (!valid.length) { toast('No valid recipients.', 'err'); return; }
+  if (!$('subject').value.trim()) { toast('No subject set.', 'err'); return; }
+
+  const delay = (parseFloat($('delay').value) || 0) * 1000;
+  const batch = parseInt($('batchSize').value) || 0;
+  const limit = batch > 0 ? Math.min(batch, valid.length) : valid.length;
+
+  isSending = true; stopFlag = false;
+  $('btnSend').style.display = 'none';
+  $('btnStop').style.display = '';
+  $('sendStatusLabel').textContent = 'Sending…';
+
+  log(`Starting — ${limit} email(s) to send`, 'info');
+
+  for (let i = 0; i < limit; i++) {
+    if (stopFlag) { log('Stopped by user.', 'warn'); break; }
+    const r = valid[i];
+
+    try {
+      await sendOne(r, i);
+      sentCount++;
+      $('sendStatDone').textContent = sentCount;
+      log(`Sent to ${r.email}`, 'ok');
+    } catch(err) {
+      failCount++;
+      $('sendStatFail').textContent = failCount;
+      log(`Failed: ${r.email} — ${err.message}`, 'err');
+    }
+
+    const pct = Math.round(((i + 1) / limit) * 100);
+    $('progressFill').style.width = pct + '%';
+    $('progressText').textContent = `${i + 1} / ${limit}`;
+
+    const remaining = limit - i - 1;
+    if (remaining > 0) {
+      $('etaText').textContent = `~${Math.round((remaining * (delay || 500)) / 1000)}s remaining`;
+    }
+
+    if (delay > 0 && i < limit - 1) await sleep(delay);
+  }
+
+  isSending = false;
+  $('btnStop').style.display = 'none';
+  $('btnReset').style.display = '';
+  $('sendBadge').style.display = '';
+  $('etaText').textContent = '';
+
+  if (stopFlag) {
+    $('sendStatusLabel').textContent = 'Stopped';
+    $('sendBadge').className = 'badge badge-amber';
+    $('sendBadge').textContent = 'Stopped';
+  } else {
+    $('sendStatusLabel').textContent = 'Complete';
+    $('sendBadge').className = 'badge badge-green';
+    $('sendBadge').textContent = `${sentCount} sent`;
+    toast(`Done — ${sentCount} email(s) processed.`, 'ok');
+  }
+}
+
+function stopSend() { stopFlag = true; }
+
+function resetSend() {
+  sentCount = 0; failCount = 0;
+  rotationResolve = null;
+  $('rotationModal').classList.remove('open');
+  initSendPanel();
+}
+
+function abortFromModal() {
+  stopFlag = true;
+  $('rotationModal').classList.remove('open');
+  if (rotationResolve) { rotationResolve(false); rotationResolve = null; }
+}
+
+function continueFromModal() {
+  // Update sender name if changed
+  const newName = $('modalFromName').value.trim();
+  if (newName) $('fromName').value = newName;
+  $('rotationModal').classList.remove('open');
+  if (rotationResolve) { rotationResolve(true); rotationResolve = null; }
+}
+
+function waitForRotationContinue() {
+  return new Promise(resolve => { rotationResolve = resolve; });
+}
+
+function showRotationModal(sent, total, limit) {
+  const remaining = total - sent;
+  $('ringNumber').textContent = sent;
+  $('modalSentCount').textContent = sent;
+  $('modalRemaining').textContent = `${remaining} email${remaining !== 1 ? 's' : ''} still to go after this.`;
+  $('modalFromName').value = $('fromName').value;
+
+  // Animate ring — full circle = 276 dasharray
+  const pct = Math.min(sent / (sent + remaining), 1);
+  $('ringFill').style.strokeDashoffset = 276 - (276 * pct);
+
+  $('rotationModal').classList.add('open');
+  log(`⏸ Paused at ${sent} — switch sender in Thunderbird then continue`, 'warn');
+}
+
+async function startSend() {
+  if (sendMethod === 'html') { exportAllTxt(); return; }
+
+  const valid = recipients.filter(r => r.valid);
+  if (!valid.length) { toast('No valid recipients.', 'err'); return; }
+  if (!$('subject').value.trim()) { toast('No subject set.', 'err'); return; }
+
+  const delay = (parseFloat($('delay').value) || 0) * 1000;
+  const rotateEnabled = $('rotateEnabled').value === 'on';
+  const rotateLimit = parseInt($('rotateLimit').value) || 100;
+  const total = valid.length;
+
+  isSending = true; stopFlag = false;
+  $('btnSend').style.display = 'none';
+  $('btnStop').style.display = '';
+  $('sendStatusLabel').textContent = 'Sending…';
+  $('sendBadge').style.display = 'none';
+
+  log(`Starting — ${total} email(s) · method: ${sendMethod}${rotateEnabled ? ` · pause every ${rotateLimit}` : ''}`, 'info');
+
+  let batchCount = 0; // count within current sender session
+
+  for (let i = sentCount; i < total; i++) {
+    if (stopFlag) { log('Stopped by user.', 'warn'); break; }
+
+    // ── Rotation pause check ──
+    if (rotateEnabled && batchCount > 0 && batchCount % rotateLimit === 0) {
+      showRotationModal(sentCount, total, rotateLimit);
+      const shouldContinue = await waitForRotationContinue();
+      if (!shouldContinue || stopFlag) { log('Aborted after rotation pause.', 'warn'); break; }
+      batchCount = 0;
+      log(`Resumed — continuing from email ${sentCount + 1} of ${total}`, 'info');
+    }
+
+    const r = valid[i];
+    try {
+      await sendOne(r, i);
+      sentCount++; batchCount++;
+      $('sendStatDone').textContent = sentCount;
+      log(`Sent to ${r.email}`, 'ok');
+    } catch(err) {
+      failCount++;
+      $('sendStatFail').textContent = failCount;
+      log(`Failed: ${r.email} — ${err.message}`, 'err');
+    }
+
+    const pct = Math.round((sentCount / total) * 100);
+    $('progressFill').style.width = pct + '%';
+    $('progressText').textContent = `${sentCount} / ${total}`;
+
+    const remaining = total - sentCount;
+    if (remaining > 0) {
+      const estSec = Math.round((remaining * Math.max(delay, 500)) / 1000);
+      $('etaText').textContent = estSec > 60 ? `~${Math.round(estSec/60)}m remaining` : `~${estSec}s remaining`;
+    } else {
+      $('etaText').textContent = '';
+    }
+
+    if (delay > 0 && i < total - 1 && !stopFlag) await sleep(delay);
+  }
+
+  isSending = false;
+  $('btnStop').style.display = 'none';
+  $('btnReset').style.display = '';
+  $('sendBadge').style.display = '';
+  $('etaText').textContent = '';
+
+  if (stopFlag) {
+    $('sendStatusLabel').textContent = 'Stopped';
+    $('sendBadge').className = 'badge badge-amber';
+    $('sendBadge').textContent = `${sentCount} sent, ${total - sentCount} remaining`;
+  } else {
+    $('sendStatusLabel').textContent = 'All done!';
+    $('sendBadge').className = 'badge badge-green';
+    $('sendBadge').textContent = `${sentCount} sent`;
+    toast(`Done — ${sentCount} email(s) processed.`, 'ok');
+  }
+}
+
+async function sendOne(r, idx) {
+  const subject = render($('subject').value, r);
+  const body = render($('body').value, r);
+  const fromName = $('fromName').value;
+
+  if (sendMethod === 'mailto') {
+    const url = `mailto:${encodeURIComponent(r.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+    await sleep(400);
+
+  } else if (sendMethod === 'eml') {
+    const content = `To: ${r.email}\r\nSubject: ${subject}\r\nFrom: ${fromName}\r\nContent-Type: text/plain; charset=UTF-8\r\nMIME-Version: 1.0\r\n\r\n${body}`;
+    const blob = new Blob([content], { type: 'message/rfc822' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `email_${idx+1}_${r.email.replace(/[@.]/g,'_')}.eml`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    await sleep(200);
+
+  } else if (sendMethod === 'txt') {
+    const text = `To: ${r.email}\nSubject: ${subject}\n\n${body}`;
+    await navigator.clipboard.writeText(text);
+  }
+}
+
+function exportAllTxt() {
+  const valid = recipients.filter(r => r.valid);
+  let out = `MAILBLAST EXPORT — ${new Date().toLocaleString()}\n`;
+  out += `Total: ${valid.length} emails\n`;
+  out += '='.repeat(60) + '\n\n';
+  valid.forEach((r, i) => {
+    out += `--- Email ${i+1} ---\n`;
+    out += `To: ${r.email}\n`;
+    out += `Subject: ${render($('subject').value, r)}\n\n`;
+    out += render($('body').value, r) + '\n\n';
+  });
+  const blob = new Blob([out], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'mailblast_export.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  log(`Exported ${valid.length} emails to mailblast_export.txt`, 'ok');
+  $('sendStatusLabel').textContent = 'Exported';
+  $('sendBadge').style.display = '';
+  $('sendBadge').className = 'badge badge-green';
+  $('sendBadge').textContent = `${valid.length} exported`;
+  $('progressFill').style.width = '100%';
+  $('progressText').textContent = `${valid.length} / ${valid.length}`;
+  $('btnSend').style.display = 'none';
+  $('btnReset').style.display = '';
+  toast(`Exported ${valid.length} emails as .txt`, 'ok');
+}
+
+// ── SIDE PANEL ──
+const sidePanels = {
+  1: `
+    <div class="side-heading">Adding recipients</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      Press <strong>Enter</strong> or <strong>,</strong> after each address to add it as a tag.
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+      Paste a whole list at once — splits on commas, semicolons, or line breaks automatically.
+    </div>
+    <div class="divider"></div>
+    <div class="side-heading">File import</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div><strong style="color:var(--text)">CSV</strong> — spreadsheet export. Needs an <code style="color:var(--amber)">email</code> column. Add <code style="color:var(--amber)">name</code> + <code style="color:var(--amber)">company</code> for personalisation.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div><strong style="color:var(--text)">TXT</strong> — one email address per line. No headers needed. Drop it and it just works.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div><strong style="color:var(--text)">TSV</strong> — tab-separated (Google Sheets export). Detected automatically.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      After import, a colour-coded column map shows exactly what was detected and mapped.
+    </div>
+  `,
+  2: `
+    <div class="side-heading">Personalisation guide</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <div><code style="color:var(--amber)">{{name}}</code> — recipient's name (from CSV, or auto-extracted from email).</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <div><code style="color:var(--amber)">{{email}}</code> — inserts their full email address.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+      <div><code style="color:var(--amber)">{{company}}</code> — company name from CSV column.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <div><code style="color:var(--amber)">{{fromName}}</code> — your name, from the From field above.</div>
+    </div>
+    <div class="divider"></div>
+    <div class="side-heading">Subject line tips</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Keep subject under 50 characters for best open rates.
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      Avoid ALL CAPS and excessive punctuation — spam triggers.
+    </div>
+  `,
+  3: `
+    <div class="side-heading">Which method to pick?</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      <div><strong style="color:var(--text)">Open in mail app</strong> — produces a <code style="color:var(--amber)">mailto:</code> link. Needs Outlook, Thunderbird, or Apple Mail set as default.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div><strong style="color:var(--text)">Download .eml</strong> — produces one <code style="color:var(--amber)">.eml</code> file per recipient. Open in any mail app to send. Best workaround for Gmail blocking.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      <div><strong style="color:var(--text)">Copy to clipboard</strong> — copies one personalised message at a time. Paste into Gmail or any webmail. Good for small lists.</div>
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+      <div><strong style="color:var(--text)">Export .txt</strong> — one file with every message written out. Good for review or handing to a VA.</div>
+    </div>
+    <div class="divider"></div>
+    <div class="side-heading">Pacing advice</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      2–5 second delay is enough to avoid spam flags on most mail clients. Set 0 only for .eml or .txt export.
+    </div>
+  `,
+  4: `
+    <div class="side-heading">What happens when I click Send?</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Each personalised email is processed one by one with your chosen delay.
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18"/></svg>
+      Hit <strong>Stop</strong> at any time to pause — you can reset and restart.
+    </div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      The activity log shows exactly what happened for each address.
+    </div>
+    <div class="divider"></div>
+    <div class="side-heading">After sending</div>
+    <div class="tip-item">
+      <svg class="tip-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+      For .eml files — once downloaded, open them in Outlook or Thunderbird and hit Send inside that app.
+    </div>
+  `
+};
+
+function updateSidePanel() {
+  $('sidePanelContent').innerHTML = sidePanels[currentStep] || '';
+}
+
+// ── INIT ──
+updateSidePanel();
+$('btnNext').style.display = '';
+</script>
+</body>
+</html>
